@@ -41,7 +41,7 @@ export function CreatePost() {
         />
       </div>
 
-      <br />
+      {/* <br /> */}
 
       <div className="flex items-center gap-6 mb-5">
         <label
@@ -61,7 +61,7 @@ export function CreatePost() {
         />
       </div>
 
-      <br />
+      {/* <br /> */}
 
       <div className="flex items-start gap-6 mb-5">
         <label

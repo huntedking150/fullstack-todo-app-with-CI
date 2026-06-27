@@ -5,6 +5,7 @@ import { PostList } from "./components/PostList";
 import { useQuery } from "@tanstack/react-query";
 import { getPosts } from "./api/posts";
 import { useEffect, useState } from "react";
+import { MoonIcon, SunIcon } from "lucide-react";
 
 export function Blog() {
   const [author, setAuthor] = useState("");
@@ -38,7 +39,7 @@ export function Blog() {
             onClick={() => setDarkMode((prev) => !prev)}
             className="rounded-full p-3 bg-white shadow-md border border-slate-200 transition-all duration-300 hover:shadow-lg dark:bg-slate-800 dark:border-slate-700"
           >
-            {darkMode ? "☀️" : "🌙"}
+            {darkMode ? <SunIcon /> : <MoonIcon />}
           </button>
         </div>
         <CreatePost />
