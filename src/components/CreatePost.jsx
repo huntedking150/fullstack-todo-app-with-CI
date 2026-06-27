@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { createPost } from "../api/posts";
+import toast from "react-hot-toast";
 
 export function CreatePost() {
   const [title, setTitle] = useState("");
@@ -10,7 +11,21 @@ export function CreatePost() {
   const queryClient = useQueryClient();
   const createPostMutation = useMutation({
     mutationFn: () => createPost({ title, author, contents }),
-    onSuccess: () => queryClient.invalidateQueries(["posts"]),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["posts"],
+      });
+
+      toast.success("Post created successfully");
+
+      setTitle("");
+      setAuthor("");
+      setContents("");
+    },
+
+    onError: () => {
+      toast.error("Failed to create post");
+    },
   });
 
   const handleSubmit = (e) => {
@@ -40,8 +55,6 @@ export function CreatePost() {
           onChange={(e) => setTitle(e.target.value)}
         />
       </div>
-
-      {/* <br /> */}
 
       <div className="flex items-center gap-6 mb-5">
         <label
@@ -84,12 +97,8 @@ export function CreatePost() {
         type="submit"
         value={createPostMutation.isPending ? "Creating..." : "Create"}
         disabled={!title || createPostMutation.isPending}
-        className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white shadow-md transition-all duration-300 hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-400"
+        className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white shadow-md transition-all duration-300 hover:bg-blue-700 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:bg-slate-400 dark:disabled:bg-slate-700 dark:disabled:text-slate-400 cursor-pointer"
       />
-
-      <div className="mt-4 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-950 px-4 py-3 text-sm font-medium text-green-700">
-        {createPostMutation.isSuccess ? <>Post created successfully!</> : null}
-      </div>
     </form>
   );
 }
