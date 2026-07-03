@@ -26,3 +26,6 @@ dist-ssr
 
 # request test file
 api.http
+
+# docker token
+.dockerToken
