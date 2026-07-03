@@ -26,7 +26,9 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: HUSKY=0 npm ci
+        run: |
+          HUSKY=0 npm ci --include=optional
+          npm rebuild @tailwindcss/oxide
 
       - name: Run linter on frontend
         run: npm run lint
