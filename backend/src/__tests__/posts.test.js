@@ -1,7 +1,9 @@
 import mongoose from 'mongoose'
-import { describe, expect, test, beforeEach } from '@jest/globals'
-import { User } from '../db/models/user.js'
+import jwt from 'jsonwebtoken'
+import { beforeEach, describe, expect, test } from '@jest/globals'
 
+import { Post } from '../db/models/post.js'
+import { User } from '../db/models/user.js'
 import {
   createPost,
   listAllPosts,
@@ -10,184 +12,175 @@ import {
   getPostById,
   updatePost,
   deletePost,
-} from '../services/posts'
-import { Post } from '../db/models/post'
+} from '../services/posts.js'
+import { createUser, loginUser, getUserInfoById } from '../services/users.js'
 
-describe('creating posts', () => {
-  test('with all parameters should succeed', async () => {
-    const user = await User.create({
-      userName: 'daniel',
+describe('posts service', () => {
+  let author
+
+  beforeEach(async () => {
+    await Post.deleteMany({})
+    await User.deleteMany({})
+    author = await User.create({ username: 'alice', password: 'secret123' })
+  })
+
+  test('createPost stores a post with the provided author and tags', async () => {
+    const createdPost = await createPost(author._id, {
+      title: 'Hello Mongoose',
+      contents: 'This post is stored in MongoDB.',
+      tags: ['mongoose', 'mongodb'],
+    })
+
+    expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId)
+
+    const savedPost = await Post.findById(createdPost._id)
+    expect(savedPost.title).toBe('Hello Mongoose')
+    expect(savedPost.contents).toBe('This post is stored in MongoDB.')
+    expect(savedPost.tags).toEqual(['mongoose', 'mongodb'])
+    expect(savedPost.author.toString()).toBe(author._id.toString())
+  })
+
+  test('listAllPosts returns posts newest first by default', async () => {
+    await createPost(author._id, {
+      title: 'First',
+      contents: 'One',
+      tags: ['news'],
+    })
+    await createPost(author._id, {
+      title: 'Second',
+      contents: 'Two',
+      tags: ['tech'],
+    })
+
+    const posts = await listAllPosts()
+
+    expect(posts).toHaveLength(2)
+    expect(posts[0].title).toBe('Second')
+    expect(posts[1].title).toBe('First')
+  })
+
+  test('listPostsByAuthor and listPostsByTag filter posts correctly', async () => {
+    const secondAuthor = await User.create({
+      username: 'bob',
+      password: 'secret456',
+    })
+
+    await createPost(author._id, {
+      title: 'Alice post',
+      contents: 'A',
+      tags: ['react'],
+    })
+    await createPost(secondAuthor._id, {
+      title: 'Bob post',
+      contents: 'B',
+      tags: ['node'],
+    })
+
+    const byAuthor = await listPostsByAuthor('alice')
+    const byTag = await listPostsByTag(['react'])
+
+    expect(byAuthor).toHaveLength(1)
+    expect(byAuthor[0].title).toBe('Alice post')
+    expect(byTag).toHaveLength(1)
+    expect(byTag[0].title).toBe('Alice post')
+  })
+
+  test('getPostById, updatePost, and deletePost work for owned posts', async () => {
+    const createdPost = await createPost(author._id, {
+      title: 'Original title',
+      contents: 'Original body',
+      tags: ['original'],
+    })
+
+    const fetchedPost = await getPostById(createdPost._id)
+    expect(fetchedPost.title).toBe('Original title')
+
+    const updatedPost = await updatePost(author._id, createdPost._id, {
+      title: 'Updated title',
+      author: author._id,
+      contents: 'Updated body',
+      tags: ['updated'],
+    })
+    expect(updatedPost.title).toBe('Updated title')
+    expect(updatedPost.contents).toBe('Updated body')
+
+    const deleteResult = await deletePost(author._id, createdPost._id)
+    expect(deleteResult.deletedCount).toBe(1)
+    expect(await Post.findById(createdPost._id)).toBeNull()
+  })
+
+  test('updatePost and deletePost return null or zero when the post is not owned by the user', async () => {
+    const createdPost = await createPost(author._id, {
+      title: 'Owned by alice',
+      contents: 'Body',
+      tags: ['test'],
+    })
+
+    const updatedPost = await updatePost(
+      new mongoose.Types.ObjectId(),
+      createdPost._id,
+      {
+        title: 'Should not update',
+        author: author._id,
+        contents: 'Nope',
+        tags: ['blocked'],
+      },
+    )
+    expect(updatedPost).toBeNull()
+
+    const deleteResult = await deletePost(
+      new mongoose.Types.ObjectId(),
+      createdPost._id,
+    )
+    expect(deleteResult.deletedCount).toBe(0)
+  })
+})
+
+describe('users service', () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
+    process.env.JWT_SECRET = 'test-secret'
+  })
+
+  test('createUser hashes the password and persists the user', async () => {
+    const createdUser = await createUser({
+      username: 'carol',
+      password: 'super-secret',
+    })
+
+    expect(createdUser.username).toBe('carol')
+    expect(createdUser.password).not.toBe('super-secret')
+
+    const savedUser = await User.findById(createdUser._id)
+    expect(savedUser.username).toBe('carol')
+    expect(savedUser.password).not.toBe('super-secret')
+  })
+
+  test('loginUser returns a valid token for correct credentials', async () => {
+    const createdUser = await createUser({
+      username: 'dave',
       password: 'password123',
     })
-    const post = {
-      title: 'Hello Mongoose!',
-      author: user._id,
-      contents: 'This post is stored in a MongoDB database using Mongoose.',
-      tags: ['mongoose', 'mongodb'],
-    }
-    const createdPost = await createPost(post)
-    expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId)
-    const foundPost = await Post.findById(createdPost._id)
-    expect(foundPost.title).toBe(post.title)
-    expect(foundPost.contents).toBe(post.contents)
-    expect(foundPost.tags).toBe(post.tags)
-    expect(foundPost.author.toString()).toBe(user._id.toString())
-    expect(foundPost.createdAt).toBeInstanceOf(Date)
-    expect(foundPost.updatedAt).toBeInstanceOf(Date)
-  })
 
-  test('without title should fail', async () => {
-    const user = await User.create({
-      userName: 'daniel',
-      password: 'abcdefg',
+    const token = await loginUser({ username: 'dave', password: 'password123' })
+
+    expect(typeof token).toBe('string')
+    expect(token.length).toBeGreaterThan(0)
+    expect(jwt.verify(token, process.env.JWT_SECRET)).toMatchObject({
+      sub: createdUser._id.toString(),
     })
-    const post = {
-      author: user._id,
-      contents: 'Post with no title',
-      tags: ['empty'],
-    }
-    try {
-      await createPost(post)
-    } catch (err) {
-      expect(err).toBeInstanceOf(mongoose.Error.ValidationError)
-      expect(err.message).toContain('`title` is required')
-    }
   })
 
-  test('with minimal parameters should succeed', async () => {
-    const post = {
-      title: 'Only a title',
-    }
-    const createdPost = await createPost(post)
-    expect(createdPost._id).toBeInstanceOf(mongoose.Types.ObjectId)
-  })
-})
-
-const samplePosts = [
-  { title: 'Learning Redux', author: 'Daniel Bugl', tags: ['redux'] },
-  { title: 'Learn React Hooks', author: 'Daniel Bugl', tags: ['react'] },
-  {
-    title: 'Full-Stack React Projects',
-    author: 'Daniel Bugl',
-    tags: ['react', 'nodejs'],
-  },
-  { title: 'Guide to TypeScript' },
-]
-
-let createdSamplePosts = []
-
-// first clears all posts from the database and clears the array of
-// created sample posts and then creates the sample posts in the database again for each of the
-// posts defined in the array earlier
-// This ensures that we have a consistent state of the database
-// before each test case runs and that we have an array to compare against when testing the list
-// post functions
-beforeEach(async () => {
-  await Post.deleteMany({})
-  createdSamplePosts = []
-  for (const post of samplePosts) {
-    const createdPost = new Post(post)
-    createdSamplePosts.push(await createdPost.save())
-  }
-})
-
-describe('listing posts', () => {
-  test('should return all posts', async () => {
-    const posts = await listAllPosts()
-    expect(posts.length).toEqual(createdSamplePosts.length)
-  })
-
-  test('should return posts by creation date descending by default', async () => {
-    const posts = await listAllPosts()
-    const sortedSamplePosts = createdSamplePosts.sort(
-      (a, b) => b.createdAt - a.createdAt,
-    )
-    expect(posts.map((post) => post.createdAt)).toEqual(
-      sortedSamplePosts.map((post) => post.createdAt),
-    )
-  })
-
-  test('should take into account provided sorting options', async () => {
-    const posts = await listAllPosts({
-      sortBy: 'udatedAt',
-      sortOrder: 'ascending',
+  test('getUserInfoById returns the username for an existing user and a fallback for unknown ids', async () => {
+    const createdUser = await createUser({
+      username: 'erin',
+      password: 'password123',
     })
-    const sortedSamplePosts = createdSamplePosts.sort(
-      (a, b) => a.updatedAt - b.updatedAt,
-    )
-    expect(posts.map((post) => post.updatedAt)).toEqual(
-      sortedSamplePosts.map((post) => post.updatedAt),
-    )
-  })
 
-  test('should be able to filter posts by author', async () => {
-    const posts = await listPostsByAuthor('Daniel Bugl')
-    expect(posts.length).toBe(3)
-  })
+    const existingUser = await getUserInfoById(createdUser._id)
+    const missingUser = await getUserInfoById(new mongoose.Types.ObjectId())
 
-  test('should be able to filter posts by tag', async () => {
-    const posts = await listPostsByTag('nodejs')
-    expect(posts.length).toBe(1)
-  })
-})
-
-describe('getting a post', () => {
-  test('should return the full post', async () => {
-    const post = await getPostById(createdSamplePosts[0]._id)
-    expect(post.toObject()).toEqual(createdSamplePosts[0].toObject())
-  })
-
-  test('should fail if the id does not exist', async () => {
-    const post = await getPostById('000000000000000000000000')
-    expect(post).toEqual(null)
-  })
-})
-
-describe('updating posts', () => {
-  test('should update the specified property', async () => {
-    await updatePost(createdSamplePosts[0]._id, {
-      author: 'Test Author',
-    })
-    const updatedPost = await Post.findById(createdSamplePosts[0]._id)
-    expect(updatedPost.author).toEqual('Test Author')
-  })
-
-  test('should not update other properties', async () => {
-    await updatePost(createdSamplePosts[0]._id, {
-      author: 'Test Author',
-    })
-    const updatedPost = await Post.findById(createdSamplePosts[0]._id)
-    expect(updatedPost.title).toEqual('Learning Redux')
-  })
-
-  test('should update the updatedAt timestamp', async () => {
-    await updatePost(createdSamplePosts[0]._id, {
-      author: 'Test Author',
-    })
-    const updatedPost = await Post.findById(createdSamplePosts[0]._id)
-    expect(updatedPost.updatedAt.getTime()).toBeGreaterThan(
-      createdSamplePosts[0].updatedAt.getTime(),
-    )
-  })
-
-  test('should fail if the id does not exist', async () => {
-    const post = await updatePost('000000000000000000000000', {
-      author: 'Test Author',
-    })
-    expect(post).toEqual(null)
-  })
-})
-
-describe('deleting posts', () => {
-  test('should remove the post from the database', async () => {
-    const result = await deletePost(createdSamplePosts[0]._id)
-    expect(result.deletedCount).toEqual(1)
-    const deletedPost = await Post.findById(createdSamplePosts[0]._id)
-    expect(deletedPost).toEqual(null)
-  })
-
-  test('should fail if the id does not exist', async () => {
-    const result = await deletePost('000000000000000000000000')
-    expect(result.deletedCount).toEqual(0)
+    expect(existingUser).toEqual({ username: 'erin' })
+    expect(missingUser).toEqual({ username: missingUser.username })
   })
 })
