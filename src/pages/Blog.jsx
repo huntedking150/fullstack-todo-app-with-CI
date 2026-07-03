@@ -1,11 +1,12 @@
-import { CreatePost } from "./components/CreatePost";
-import { PostFilter } from "./components/PostFilter";
-import { PostSorting } from "./components/PostSorting";
-import { PostList } from "./components/PostList";
+import { CreatePost } from "../components/CreatePost";
+import { PostFilter } from "../components/PostFilter";
+import { PostSorting } from "../components/PostSorting";
+import { PostList } from "../components/PostList";
 import { useQuery } from "@tanstack/react-query";
-import { getPosts } from "./api/posts";
 import { useEffect, useState } from "react";
 import { MoonIcon, SunIcon } from "lucide-react";
+import { getPosts } from "../api/posts";
+import { Header } from "../components/Header";
 
 export function Blog() {
   const [author, setAuthor] = useState("");
@@ -34,14 +35,18 @@ export function Blog() {
   return (
     <>
       <div className="min-h-screen p-6 bg-slate-50 text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end mb-6 gap-x-5">
           <button
             onClick={() => setDarkMode((prev) => !prev)}
-            className="rounded-full p-3 bg-white shadow-md border border-slate-200 transition-all duration-300 hover:shadow-lg dark:bg-slate-800 dark:border-slate-700"
+            className="rounded-full p-3 bg-white shadow-md border border-slate-200 transition-all duration-300 hover:shadow-lg dark:bg-slate-800 dark:border-slate-700 cursor-pointer"
           >
             {darkMode ? <SunIcon /> : <MoonIcon />}
           </button>
+          <div>
+            <Header />
+          </div>
         </div>
+
         <CreatePost />
         <br />
         <br />

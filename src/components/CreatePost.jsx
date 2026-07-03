@@ -1,16 +1,17 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { createPost } from "../api/posts";
+import { useAuth } from "../contexts/AuthContext";
 import toast from "react-hot-toast";
 
 export function CreatePost() {
   const [title, setTitle] = useState("");
-  const [author, setAuthor] = useState("");
   const [contents, setContents] = useState("");
+  const [token] = useAuth();
 
   const queryClient = useQueryClient();
   const createPostMutation = useMutation({
-    mutationFn: () => createPost({ title, author, contents }),
+    mutationFn: () => createPost(token, { title, contents }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["posts"],
@@ -19,7 +20,6 @@ export function CreatePost() {
       toast.success("Post created successfully");
 
       setTitle("");
-      setAuthor("");
       setContents("");
     },
 
@@ -27,6 +27,8 @@ export function CreatePost() {
       toast.error("Failed to create post");
     },
   });
+
+  if (!token) return <div>Please log in to create new posts.</div>;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -53,24 +55,6 @@ export function CreatePost() {
           className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 dark:focus:border-green-400 text-lg placeholder:text-slate-400 focus:border-green-500  focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 capitalize"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-        />
-      </div>
-
-      <div className="flex items-center gap-6 mb-5">
-        <label
-          htmlFor="author"
-          className="w-24 text-base font-semibold text-slate-700 dark:text-slate-300"
-        >
-          Author:{" "}
-        </label>
-        <input
-          type="text"
-          name="author"
-          id="author"
-          placeholder="Enter your name"
-          className="flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-slate-800 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-600 dark:focus:border-green-400 text-lg placeholder:text-slate-400 focus:border-green-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 capitalize"
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
         />
       </div>
 

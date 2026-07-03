@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import { SquarePen, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deletePost } from "../api/posts";
+import { User } from "./User";
 import toast from "react-hot-toast";
 import { useState } from "react";
 import { EditPostModal } from "./EditPostModal";
@@ -39,7 +40,7 @@ export function Post({ _id, title, contents, author }) {
           <em className="mt-5 block text-sm text-slate-500 transition-colors duration-200 hover:bg-indigo-50 dark:hover:bg-indigo-950 dark:text-slate-300 rounded-lg px-1 py-1">
             Written by{" "}
             <strong className="ml-1 inline-flex items-center rounded-full bg-indigo-100 px-3 py-1 font-semibold text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
-              {author}
+              <User id={author} />
             </strong>
           </em>
         )}
