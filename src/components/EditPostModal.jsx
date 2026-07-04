@@ -5,16 +5,18 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { updatePost } from "../api/posts";
+import { User } from "./User";
+import { useAuth } from "../contexts/AuthContext";
 
 export function EditPostModal({ post, onClose }) {
   const queryClient = useQueryClient();
+  const [token] = useAuth();
 
   const [title, setTitle] = useState(post.title);
-  const [author, setAuthor] = useState(post.author || "");
   const [contents, setContents] = useState(post.contents || "");
 
   const updatePostMutation = useMutation({
-    mutationFn: updatePost,
+    mutationFn: ({ id, post }) => updatePost(token, { id, post }),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -38,7 +40,7 @@ export function EditPostModal({ post, onClose }) {
       id: post._id,
       post: {
         title,
-        author,
+        author: post.author,
         contents,
       },
     });
@@ -145,30 +147,24 @@ export function EditPostModal({ post, onClose }) {
               Author
             </label>
 
-            <input
+            <div
               id="edit-author"
-              type="text"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
               className="
                 w-full
                 rounded-xl
                 border
                 border-slate-300
-                bg-white
+                bg-slate-50
                 px-4
                 py-2.5
                 text-slate-800
-                transition-all
-                focus:border-indigo-500
-                focus:ring-4
-                focus:ring-indigo-100
-                focus:outline-none
                 dark:border-slate-600
                 dark:bg-slate-800
                 dark:text-slate-100
               "
-            />
+            >
+              <User id={post.author} />
+            </div>
           </div>
 
           <div>

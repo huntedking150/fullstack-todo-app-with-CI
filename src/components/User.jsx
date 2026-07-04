@@ -4,7 +4,7 @@ import { getUserInfo } from "../api/users";
 
 export function User({ id }) {
   const userInfoQuery = useQuery({
-    queryKey: ["users", "id"],
+    queryKey: ["users", id],
     queryFn: () => getUserInfo(id),
   });
 

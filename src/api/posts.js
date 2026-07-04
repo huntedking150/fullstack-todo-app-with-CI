@@ -18,9 +18,12 @@ export const createPost = async (token, post) => {
   return await res.json();
 };
 
-export const deletePost = async (id) => {
+export const deletePost = async (token, id) => {
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/posts/${id}`, {
     method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (!res.ok) {
@@ -28,11 +31,12 @@ export const deletePost = async (id) => {
   }
 };
 
-export const updatePost = async ({ id, post }) => {
+export const updatePost = async (token, { id, post }) => {
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/posts/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(post),
   });

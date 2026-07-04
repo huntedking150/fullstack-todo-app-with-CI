@@ -5,14 +5,27 @@ import { deletePost } from "../api/posts";
 import { User } from "./User";
 import toast from "react-hot-toast";
 import { useState } from "react";
+import { jwtDecode } from "jwt-decode";
 import { EditPostModal } from "./EditPostModal";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Post({ _id, title, contents, author }) {
   const [editingPost, setEditingPost] = useState(null);
+  const [token] = useAuth();
   const queryClient = useQueryClient();
 
+  let canEdit = false;
+  if (token && author) {
+    try {
+      const { sub } = jwtDecode(token);
+      canEdit = sub === author;
+    } catch {
+      canEdit = false;
+    }
+  }
+
   const deletePostMutation = useMutation({
-    mutationFn: deletePost,
+    mutationFn: ({ token, id }) => deletePost(token, id),
 
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -46,8 +59,9 @@ export function Post({ _id, title, contents, author }) {
         )}
 
         <div className="flex items-center gap-2">
-          <button
-            className="
+          {canEdit && (
+            <button
+              className="
         rounded-lg
         p-2
         text-slate-500
@@ -59,18 +73,19 @@ export function Post({ _id, title, contents, author }) {
         dark:hover:text-amber-400
         hover:scale-110 active:scale-95
       "
-            title="Edit Post"
-            onClick={() =>
-              setEditingPost({
-                _id,
-                title,
-                author,
-                contents,
-              })
-            }
-          >
-            <SquarePen size={18} />
-          </button>
+              title="Edit Post"
+              onClick={() =>
+                setEditingPost({
+                  _id,
+                  title,
+                  author,
+                  contents,
+                })
+              }
+            >
+              <SquarePen size={18} />
+            </button>
+          )}
 
           <button
             className="
@@ -90,7 +105,7 @@ export function Post({ _id, title, contents, author }) {
               if (
                 window.confirm("Are you sure you want to delete this post?")
               ) {
-                deletePostMutation.mutate(_id);
+                deletePostMutation.mutate({ token, id: _id });
               }
             }}
           >
