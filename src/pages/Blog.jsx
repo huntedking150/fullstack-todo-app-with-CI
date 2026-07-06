@@ -18,17 +18,17 @@ export function Blog() {
   });
   const posts = postsQuery.data ?? [];
 
-  const [darkMode, setDarkMode] = useState(() => {
-    return localStorage.getItem("theme") === "dark";
-  });
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+    const storedTheme = localStorage.getItem("theme");
+    if (storedTheme) {
+      setDarkMode(storedTheme === "dark");
     }
+  }, []);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
@@ -66,7 +66,6 @@ export function Blog() {
           orderValue={sortOrder}
           onOrderChange={(orderValue) => setSortOrder(orderValue)}
         />
-        {/* <hr /> */}
         <PostList posts={posts} />
       </div>
     </>
