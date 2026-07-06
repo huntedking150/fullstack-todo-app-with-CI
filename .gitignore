@@ -31,8 +31,7 @@ api.http
 .dockerToken
 
 # notes
-*notes.md
-architecture.md
+
 
 # diagrams
 *.drawio
