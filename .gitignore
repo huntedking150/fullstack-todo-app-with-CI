@@ -35,3 +35,4 @@ api.http
 
 # diagrams
 *.drawio
+*.txt

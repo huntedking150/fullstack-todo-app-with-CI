@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: blog-backend
+    env: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 3002
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  - type: web
+    name: blog-frontend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: VITE_BACKEND_URL
+        value: https://blog-backend.onrender.com/api/v1

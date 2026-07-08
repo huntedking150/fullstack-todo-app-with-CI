@@ -1,6 +1,6 @@
 FROM node:20 AS build
 
-ARG VITE_API_URL=http://localhost:3001
+ARG VITE_BACKEND_URL=http://localhost:3001/api/v1
 
 WORKDIR /build
 
@@ -10,7 +10,7 @@ RUN npm install
 
 COPY . .
 
-RUN VITE_API_URL=$VITE_API_URL npm run build
+RUN VITE_BACKEND_URL=$VITE_BACKEND_URL npm run build
 
 FROM node:20 AS final
 
