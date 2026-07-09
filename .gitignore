@@ -29,3 +29,6 @@ api.http
 
 # docker token
 .dockerToken
+
+*.txt
+*.drawio
